@@ -12,6 +12,7 @@
             [jepsen.os.centos :as centos]
             [yugabyte.auto :as auto]
             [yugabyte.bank :as bank]
+            [yugabyte.causal :as causal]
             [yugabyte.counter :as counter]
             [yugabyte.long-fork :as long-fork]
             [yugabyte.multi-key-acid :as multi-key-acid]
@@ -26,6 +27,7 @@
             [yugabyte.ycql.set]
             [yugabyte.ycql.single-key-acid]
             [yugabyte.ysql.bank]
+            [yugabyte.ysql.causal]
             [yugabyte.ysql.counter]
             [yugabyte.ysql.long-fork]
             [yugabyte.ysql.multi-key-acid]
@@ -90,6 +92,7 @@
          :bank            (with-client bank/workload-allow-neg (yugabyte.ysql.bank/->YSQLBankClient true))
          :bank-multitable (with-client bank/workload-allow-neg (yugabyte.ysql.bank/->YSQLMultiBankClient true))
          :long-fork       (with-client long-fork/workload (yugabyte.ysql.long-fork/->YSQLLongForkClient))
+         :causal          (with-client causal/workload (yugabyte.ysql.causal/->YSQLCausalClient))
          :single-key-acid (with-client single-key-acid/workload (yugabyte.ysql.single-key-acid/->YSQLSingleKeyAcidClient))
          :multi-key-acid  (with-client multi-key-acid/workload (yugabyte.ysql.multi-key-acid/->YSQLMultiKeyAcidClient))})
 
