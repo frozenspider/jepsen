@@ -30,7 +30,9 @@
             [yugabyte.ysql.long-fork]
             [yugabyte.ysql.multi-key-acid]
             [yugabyte.ysql.set]
-            [yugabyte.ysql.single-key-acid])
+            [yugabyte.ysql.single-key-acid]
+            [yugabyte.insert-on-conflict :as insert-on-conflict]
+            [yugabyte.ysql.insert-on-conflict])
   (:import (jepsen.client Client)))
 
 (defn noop-test
@@ -91,7 +93,8 @@
          :bank-multitable (with-client bank/workload-allow-neg (yugabyte.ysql.bank/->YSQLMultiBankClient true))
          :long-fork       (with-client long-fork/workload (yugabyte.ysql.long-fork/->YSQLLongForkClient))
          :single-key-acid (with-client single-key-acid/workload (yugabyte.ysql.single-key-acid/->YSQLSingleKeyAcidClient))
-         :multi-key-acid  (with-client multi-key-acid/workload (yugabyte.ysql.multi-key-acid/->YSQLMultiKeyAcidClient))})
+         :multi-key-acid  (with-client multi-key-acid/workload (yugabyte.ysql.multi-key-acid/->YSQLMultiKeyAcidClient))
+         :insert-on-conflict  (with-client insert-on-conflict/workload (yugabyte.ysql.insert-on-conflict/->Client))})
 
 (def workloads
   (merge workloads-ycql workloads-ysql))
