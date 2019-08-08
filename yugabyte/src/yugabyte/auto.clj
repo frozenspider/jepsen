@@ -309,7 +309,7 @@
    ])
 
 (def added-log-flags
-  ["--vmodule=\"intent_aware_iterator=4,doc_rowwise_iterator=4,tablet_service=4,transaction=4,transaction_coordinator=4,transaction_participant=4,conflict_resolution=4\""])
+  ["--vmodule=\"transaction_coordinator=4,transaction_participant=4,conflict_resolution=4\""])
 
 (def limits-conf
   "Ulimits, in the format for /etc/security/limits.conf."
