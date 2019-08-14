@@ -23,29 +23,6 @@
   [i]
   (str "append" i))
 
-(defn insert-using-count!
-  "Inserts a row with value v into a table, returning v. Key is derived from
-  the count of rows in the table."
-  [conn table v]
-  (let [k (-> (c/query conn [(str "select count(*) from " table)])
-              first
-              :count)]
-    (c/execute! conn [(str "insert into " table " (k, v) values (?, ?)") k v])
-    v))
-
-(defn insert-now!
-  "Inserts a value v into a table, returning v. Key is computed using NOW()."
-  [conn table v]
-  (c/execute! conn [(str "insert into " table " (k, v) values (NOW(), ?)") v])
-  v)
-
-(defn insert-txn-timestamp!
-  "Inserts a value v into a table, returning v. Key is derived from
-  TRANSACTION_TIMESTAMP."
-  [conn table v]
-  (c/execute! conn [(str "insert into " table " (k, v) values (TRANSACTION_TIMESTAMP(), ?)") v])
-  v)
-
 (defn insert!
   "Inserts a row with value v into a table, returning v. Key is assigned
   automatically."
@@ -59,12 +36,6 @@
   (let [res (c/query conn [(str "select k, v from " table " order by k")])]
     (info "table" table "has" (map (juxt :k :v) res))
     (mapv :v res)))
-
-(defn read-natural
-  "Reads every value in table using natural ordering."
-  [conn table]
-  (->> (c/query conn [(str "select (v) from " table)])
-       (mapv :v)))
 
 (defn create-table!
   "Creates a table for the given relation. Swallows already-exists errors,
