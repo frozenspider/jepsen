@@ -100,7 +100,7 @@
   (invoke-op! [this test op c conn-wrapper]
     (with-table c
       (let [txn       (:value op)
-            use-txn?  (< 1 (count txn))
+            use-txn?  true
             ; use-txn?  false ; Just for making sure the checker actually works
             txn'      (if use-txn?
                         (c/with-txn c
