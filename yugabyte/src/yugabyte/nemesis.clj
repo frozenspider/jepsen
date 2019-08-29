@@ -9,6 +9,20 @@
             [slingshot.slingshot :refer [try+]]
             [yugabyte.auto :as auto]))
 
+(def max-skew-ms
+  "Max clock skew to be used by test"
+  40)
+
+(defn rand-skew-ms
+  "Get random clock skew between 5 ms (inclusive) and max-skew-ms (exclusive)"
+  []
+  (+ 5 (rand (- max-skew-ms 5))))
+
+(defn rand-half-skew-ms
+  "!"
+  []
+  (/ (double (rand-skew-ms)) 2))
+
 (defn process-nemesis
   "A nemesis that can start, stop, and kill randomly selected subsets of
   nodes."
@@ -114,20 +128,48 @@
       (->> test :nodes nemesis/majorities-ring)
       :partition-type :ring))
 
+(defn reset-gen
+  "Randomized reset generator. Performs resets on random subsets of the tests'
+  nodes."
+  [test process]
+  {:type :info, :f :reset, :value (util/random-nonempty-subset (:nodes test))})
+
 (defn bump-gen
   "Randomized clock bump generator. On random subsets of nodes, bumps the clock
-  from -max-skew to +max-skew milliseconds, exponentially distributed."
-  [max-skew-ms test process]
-  (let [gen (nt/bump-gen test process)]
-    (assoc gen :value
-           (->> (:value gen)
-                (map (fn [x] [(key x) (-> x val (* max-skew-ms) (quot 262144))]))
-                (into {})))))
+  from -max-skew-ms to +max-skew-ms."
+  [test process]
+  {:type  :info
+   :f     :bump
+   :value (zipmap (util/random-nonempty-subset (:nodes test))
+                  (repeatedly (fn []
+                                (long (* (rand-nth [-1 1])
+                                         (rand-half-skew-ms))))))})
+
+(defn strobe-gen
+  "Randomized clock strobe generator. On random subsets of the test's nodes,
+  introduces clock strobes from 4 ms to max-skew-ms, with a period of 1 ms to
+  1 second, for a duration of 0-32 seconds."
+  [test process]
+  {:type  :info
+   :f     :strobe
+   :value (zipmap (util/random-nonempty-subset (:nodes test))
+                  (repeatedly (fn []
+                                {:delta (long (rand-half-skew-ms))
+                                 :period (long (Math/pow 2 (rand 10)))
+                                 :duration (rand 32)})))})
+
+(defn clock-gen-base
+  "Emits a random schedule of clock skew operations. Always starts by checking
+  the clock offsets to establish an initial bound."
+  []
+  (gen/phases
+    (gen/once {:type :info, :f :check-offsets})
+    (gen/mix [reset-gen bump-gen strobe-gen])))
 
 (defn clock-gen
   "A mixture of clock operations."
   []
-  (->> (nt/clock-gen)
+  (->> (clock-gen-base) ; (nt/clock-gen)
        (gen/f-map {:check-offsets  :check-clock-offsets
                    :reset          :reset-clock
                    :strobe         :strobe-clock
