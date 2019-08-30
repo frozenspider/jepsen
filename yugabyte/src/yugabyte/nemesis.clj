@@ -14,14 +14,17 @@
   40)
 
 (defn rand-skew-ms
-  "Get random clock skew between 5 ms (inclusive) and max-skew-ms (exclusive)"
+  "Get random clock skew between 1 ms (inclusive) and max-skew-ms (exclusive)"
   []
-  (+ 5 (rand (- max-skew-ms 5))))
+  (+ 1 (rand (- max-skew-ms 1))))
 
-(defn rand-unit-skew-ms
-  "!"
-  []
-  (/ (double (rand-skew-ms)) 4))
+(defn skew-within-bound?
+  "Whether clock skew for any node would be out of bound
+  if we apply added-offsets to the current ones"
+  [offsets added-offsets]
+  (->> (merge-with + offsets added-offsets)
+       (vals)
+       (some #(> % max-skew-ms))))
 
 (defn process-nemesis
   "A nemesis that can start, stop, and kill randomly selected subsets of
@@ -76,7 +79,27 @@
         (nt/reset-time! test)
         nem)
 
-      (invoke! [_ test op] (nemesis/invoke! clock-nemesis test op))
+      (invoke! [_ test op]
+        (let [offsets (c/on-nodes test (fn [test node] (nt/current-offset)))
+              err     (assoc op
+                        :type :info
+                        :error "New offsets would be out of bounds"
+                        :clock-offsets offsets)]
+          (case (:f op)
+            :reset (nemesis/invoke! clock-nemesis test op)
+
+            :check-offsets (nemesis/invoke! clock-nemesis test op)
+
+            :strobe
+            (assoc op
+              :type :fail
+              :error "Strobe is disabled"
+              :clock-offsets offsets)
+
+            :bump
+            (if (skew-within-bound? offsets (:value op))
+              (nemesis/invoke! clock-nemesis test op)
+              err))))
 
       (teardown! [_ test] (nemesis/teardown! clock-nemesis test)))))
 
@@ -143,7 +166,7 @@
    :value (zipmap (util/random-nonempty-subset (:nodes test))
                   (repeatedly (fn []
                                 (long (* (rand-nth [-1 1])
-                                         (rand-unit-skew-ms))))))})
+                                         (rand-skew-ms))))))})
 
 (defn strobe-gen
   "Randomized clock strobe generator. On random subsets of the test's nodes,
@@ -154,7 +177,7 @@
    :f     :strobe
    :value (zipmap (util/random-nonempty-subset (:nodes test))
                   (repeatedly (fn []
-                                {:delta (long (rand-unit-skew-ms))
+                                {:delta (long (rand-skew-ms))
                                  :period (long (Math/pow 2 (rand 10)))
                                  :duration (rand 32)})))})
 
@@ -164,7 +187,7 @@
   []
   (gen/phases
     (gen/once {:type :info, :f :check-offsets})
-    (gen/mix [reset-gen bump-gen strobe-gen])))
+    (gen/mix [reset-gen bump-gen])))
 
 (defn clock-gen
   "A mixture of clock operations."
