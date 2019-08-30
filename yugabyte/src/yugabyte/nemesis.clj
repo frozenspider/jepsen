@@ -18,10 +18,10 @@
   []
   (+ 5 (rand (- max-skew-ms 5))))
 
-(defn rand-half-skew-ms
+(defn rand-unit-skew-ms
   "!"
   []
-  (/ (double (rand-skew-ms)) 2))
+  (/ (double (rand-skew-ms)) 4))
 
 (defn process-nemesis
   "A nemesis that can start, stop, and kill randomly selected subsets of
@@ -143,7 +143,7 @@
    :value (zipmap (util/random-nonempty-subset (:nodes test))
                   (repeatedly (fn []
                                 (long (* (rand-nth [-1 1])
-                                         (rand-half-skew-ms))))))})
+                                         (rand-unit-skew-ms))))))})
 
 (defn strobe-gen
   "Randomized clock strobe generator. On random subsets of the test's nodes,
@@ -154,7 +154,7 @@
    :f     :strobe
    :value (zipmap (util/random-nonempty-subset (:nodes test))
                   (repeatedly (fn []
-                                {:delta (long (rand-half-skew-ms))
+                                {:delta (long (rand-unit-skew-ms))
                                  :period (long (Math/pow 2 (rand 10)))
                                  :duration (rand 32)})))})
 
