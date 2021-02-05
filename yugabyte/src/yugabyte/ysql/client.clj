@@ -16,7 +16,7 @@
 (def default-timeout "Default timeout for operations in ms" 30000)
 
 (def conn-isolation-level "Default isolation level for connections"
-  java.sql.Connection/TRANSACTION_SERIALIZABLE)
+  java.sql.Connection/TRANSACTION_REPEATABLE_READ)
 
 (def ysql-port 5433)
 
